@@ -7,27 +7,6 @@
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.3-green.svg)
 ![React](https://img.shields.io/badge/React-18.3.1-blue.svg)
 
----
-
-## 📋 Table of Contents
-
-- [Project Overview](#project-overview)
-- [Features](#features)
-- [Technology Stack](#technology-stack)
-- [System Architecture](#system-architecture)
-- [Project Structure](#project-structure)
-- [Backend Architecture](#backend-architecture)
-- [Frontend Architecture](#frontend-architecture)
-- [Database Schema](#database-schema)
-- [API Endpoints](#api-endpoints)
-- [Installation & Setup](#installation--setup)
-- [Environment Variables](#environment-variables)
-- [Running the Application](#running-the-application)
-- [Deployment](#deployment)
-- [Contributing](#contributing)
-- [License](#license)
-
----
 
 ## 🌱 Project Overview
 
