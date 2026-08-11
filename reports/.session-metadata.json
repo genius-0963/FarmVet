@@ -1,0 +1,110 @@
+{
+  "reports/20260811/20260811_220747_hackday_backend-master_2.log": {
+    "parsedHeader": {
+      "mtime": 1786466267628,
+      "size": 2169,
+      "date": "2026-08-11T16:37:47.269Z",
+      "project": "hackday_backend-master 2",
+      "adapter": "node-terminal",
+      "lineCount": 1,
+      "hasTimestamps": true,
+      "durationMs": 358
+    },
+    "groupId": "cd1ac23e-1085-4e2b-837e-d38ff7dce201",
+    "integrations": {
+      "performance": {
+        "snapshot": {
+          "cpus": 8,
+          "totalMemMb": 8192,
+          "freeMemMb": 68,
+          "loadAvg": [
+            2.86181640625,
+            2.53515625,
+            2.36962890625
+          ]
+        },
+        "capturedAt": 1786466267627,
+        "sessionWindow": {
+          "start": 1786466267306,
+          "end": 1786466267627
+        }
+      }
+    },
+    "debugAdapterType": "node-terminal"
+  },
+  "reports/20260811/20260811_220806_hackday_backend-master_2.log": {
+    "parsedHeader": {
+      "mtime": 1786466286595,
+      "size": 2169,
+      "date": "2026-08-11T16:38:06.253Z",
+      "project": "hackday_backend-master 2",
+      "adapter": "node-terminal",
+      "lineCount": 1,
+      "hasTimestamps": true,
+      "durationMs": 342
+    },
+    "groupId": "c454758a-bb4e-4960-8367-e51fe38708ae",
+    "integrations": {
+      "performance": {
+        "snapshot": {
+          "cpus": 8,
+          "totalMemMb": 8192,
+          "freeMemMb": 80,
+          "loadAvg": [
+            2.6220703125,
+            2.49951171875,
+            2.35986328125
+          ]
+        },
+        "capturedAt": 1786466286594,
+        "sessionWindow": {
+          "start": 1786466286306,
+          "end": 1786466286594
+        }
+      }
+    },
+    "debugAdapterType": "node-terminal"
+  },
+  "reports/20260811/20260811_220825_hackday_backend-master_2.log": {
+    "parsedHeader": {
+      "mtime": 1786466306022,
+      "size": 2169,
+      "date": "2026-08-11T16:38:25.691Z",
+      "project": "hackday_backend-master 2",
+      "adapter": "node-terminal",
+      "lineCount": 1,
+      "hasTimestamps": true,
+      "durationMs": 330
+    },
+    "groupId": "77ed33a9-a1bc-4d86-b5ed-46f3ea749808",
+    "integrations": {
+      "performance": {
+        "snapshot": {
+          "cpus": 8,
+          "totalMemMb": 8192,
+          "freeMemMb": 74,
+          "loadAvg": [
+            2.87158203125,
+            2.5634765625,
+            2.38525390625
+          ]
+        },
+        "capturedAt": 1786466306021,
+        "sessionWindow": {
+          "start": 1786466305730,
+          "end": 1786466306021
+        }
+      }
+    }
+  },
+  "reports/20260811/20260811_220428_hackday_backend-master_2.log": {
+    "errorCount": 0,
+    "warningCount": 0,
+    "perfCount": 0,
+    "infoCount": 0,
+    "debugCount": 1,
+    "databaseCount": 0,
+    "todoCount": 0,
+    "noticeCount": 0
+  }
+}
