@@ -1,0 +1,40 @@
+.App {
+  font-family: Arial, sans-serif;
+  margin: 0 auto;
+  max-width: 960px;
+  padding: 20px;
+}
+
+.App-header {
+  margin-bottom: 20px;
+}
+
+.App-header h1 {
+  margin: 0 0 10px;
+}
+
+nav {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+nav a {
+  text-decoration: none;
+  color: #0070f3;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+}
+
+nav a.active {
+  background: #0070f3;
+  color: white;
+}
+
+main {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+}
