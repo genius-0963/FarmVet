@@ -8,10 +8,20 @@
       name="description"
       content="FarmVet Connect - Agricultural and Veterinary Management System"
     />
+    <link rel="manifest" href="/manifest.json" />
     <title>FarmVet Connect</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(reg => console.log('FarmVet PWA Service Worker registered:', reg.scope))
+            .catch(err => console.warn('Service Worker registration failed:', err));
+        });
+      }
+    </script>
   </body>
 </html>
