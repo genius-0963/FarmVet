@@ -17,6 +17,9 @@ public class PrimaryUser {
     private String phone;
     private String password;
     private String role;
+    private String preferredLanguage = "en";
+    private String kycStatus = "PENDING"; // PENDING, VERIFIED, REJECTED
+    private String kycDocumentUrl;
 
     public PrimaryUser() {
     }
@@ -28,6 +31,18 @@ public class PrimaryUser {
         this.phone = phone;
         this.password = password;
         this.role = role;
+    }
+
+    public PrimaryUser(Long id, String username, String email, String phone, String password, String role, String preferredLanguage, String kycStatus, String kycDocumentUrl) {
+        this.id = id;
+        this.username = username;
+        this.email = email;
+        this.phone = phone;
+        this.password = password;
+        this.role = role;
+        this.preferredLanguage = preferredLanguage;
+        this.kycStatus = kycStatus;
+        this.kycDocumentUrl = kycDocumentUrl;
     }
 
     public Long getId() {
@@ -76,5 +91,29 @@ public class PrimaryUser {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getPreferredLanguage() {
+        return preferredLanguage;
+    }
+
+    public void setPreferredLanguage(String preferredLanguage) {
+        this.preferredLanguage = preferredLanguage;
+    }
+
+    public String getKycStatus() {
+        return kycStatus;
+    }
+
+    public void setKycStatus(String kycStatus) {
+        this.kycStatus = kycStatus;
+    }
+
+    public String getKycDocumentUrl() {
+        return kycDocumentUrl;
+    }
+
+    public void setKycDocumentUrl(String kycDocumentUrl) {
+        this.kycDocumentUrl = kycDocumentUrl;
     }
 }
