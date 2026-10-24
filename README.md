@@ -49,104 +49,101 @@ Smallholder farming systems and rural veterinarians face two structural bottlene
 
 The system is designed as a **Modular Monolith** with clear bounded contexts, event-driven streaming, and clean layer decoupling:
 
-```
-┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                          PRESENTATION LAYER                                            │
-│                                                                                                        │
-│   React 18 SPA  ───  Tailwind CSS  ───  StreamingMarkdown Parser  ───  HTML5 Voice Audio Synthesis    │
-│   [Floating Copilot Agent]          [AiAssistant Full-Screen]          [Responsive Mobile PWA]         │
-└───────────────────────────────────┬───────────────────────────────────┬────────────────────────────────┘
-                                    │ Server-Sent Events (SSE)          │ REST APIs (JSON / JWT)
-                                    ▼                                   ▼
-┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                       SPRING BOOT 3.4 GATEWAY & FILTERS                                │
-│                                                                                                        │
-│   ├── RateLimitingFilter (Sliding Window Bucket)                                                      │
-│   ├── AuditLogFilter (Distributed Request Correlation ID)                                             │
-│   └── JwtAuthenticationFilter (Stateless Bearer Verification & Role Assertion)                         │
-└───────────────────────────────────────────────────┬────────────────────────────────────────────────────┘
-                                                    │
-                                                    ▼
-┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                         AI & CORE DOMAIN SERVICES                                      │
-│                                                                                                        │
-│   ┌───────────────────────────────────────────────┐   ┌────────────────────────────────────────────┐   │
-│   │ AiOrchestratorService                         │   │ ChemicalSafetyInterceptor                  │   │
-│   │  • ConversationalIntentClassifier             │   │  • CIB&RC Banned Substance Blocker         │   │
-│   │  • ConversationSessionService (Field Profile) │   │  • Pre-Harvest Interval (PHI) Calculator   │   │
-│   │  • SemanticCacheService (< 1ms In-Memory)     │   │  • 15L Knapsack Tank Dilution Math         │   │
-│   └───────────────────────┬───────────────────────┘   └────────────────────────────────────────────┘   │
-│                           │                                                                            │
-│                           ▼                                                                            │
-│   ┌───────────────────────────────────────────────┐   ┌────────────────────────────────────────────┐   │
-│   │ FreeAiService (Multi-Provider LLM Gateway)    │   │ FarmAgentService (Autonomous ReAct Agent)  │   │
-│   │  • Google Gemini 1.5 Flash (Free Tier)        │   │  • Mandi APMC Price Planner Tool           │   │
-│   │  • Groq LLaMA-3.3-70B (Fast Inference)        │   │  • Foliar Disease Remediation Engine       │   │
-│   │  • FarmVet Built-in Agro-AI (Zero Cost)       │   │  • Clinical Veterinary Triage Routing      │   │
-│   └───────────────────────────────────────────────┘   └────────────────────────────────────────────┘   │
-│                                                                                                        │
-│   ┌────────────────────────────────────────────────────────────────────────────────────────────┐       │
-│   │ Domain Modules: Crops • Disease • Irrigation • Livestock • Pesticides • Finance • Schemes  │       │
-│   └────────────────────────────────────────────────────────────────────────────────────────────┘       │
-└───────────────────────────────────────────────────┬────────────────────────────────────────────────────┘
-                                                    │
-                                                    ▼
-┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                           PERSISTENCE LAYER                                            │
-│                                                                                                        │
-│   Spring Data JPA  ───  Hibernate ORM  ───  HikariCP Connection Pool  ───  H2 (Dev) / PostgreSQL (Prod)│
-└────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph Client["Presentation Layer (React 18 & PWA)"]
+        UI["Floating Copilot & Full-Screen AI"]
+        MD["StreamingMarkdown (Zero Asterisks)"]
+        VOX["Voice STT / TTS Audio Engine"]
+    end
+
+    subgraph Gateway["Gateway & Security (Spring Boot 3.4)"]
+        RL["RateLimitingFilter (Token Bucket)"]
+        AL["AuditLogFilter (Correlation UUID)"]
+        JWT["JwtAuthenticationFilter (Stateless RBAC)"]
+    end
+
+    subgraph AICore["AI Copilot & Safety Engine"]
+        INT["Intent Classifier (Greetings / Boundaries)"]
+        MEM["Field Profile State Machine (Multi-Turn)"]
+        CACHE["In-Memory Semantic Cache (Sub-1ms)"]
+        ORCH["Cascading Provider Gateway"]
+        SAFE["Chemical Safety & CIB and RC Interceptor"]
+        REACT["Autonomous ReAct Agronomy Agent"]
+    end
+
+    subgraph Providers["LLM Inference Providers"]
+        P1["Google Gemini 1.5 Flash"]
+        P2["Groq LLaMA-3.3-70B"]
+        P3["FarmVet Built-in Agro-AI (Sub-20ms)"]
+    end
+
+    subgraph Data["Persistence Layer"]
+        DB[("HikariCP / H2 / PostgreSQL")]
+    end
+
+    UI --> Gateway
+    Gateway --> AICore
+    ORCH --> Providers
+    AICore --> Data
 ```
 
 ---
 
 ## 3. Production AI Engine Deep Dive
 
-```
- Farmer Query ("I have 4 acres of cotton with whitefly. What should I spray?")
-                                  │
-                                  ▼
-             [ Step 1: Conversational Intent Classifier ]
-             ├── Greeting/Courtesy? ──▶ Return Warm Persona Response (Namaste)
-             ├── Off-Topic?        ──▶ Return Domain Redirection (Non-Agri Refusal)
-             └── Agri Query Valid  ──▶ Proceed to Step 2
-                                  │
-                                  ▼
-             [ Step 2: Multi-Turn Field Profile State Machine ]
-             ├── Extract Entities: Crop = "Cotton", Acreage = 4.0, Stage = "Vegetative"
-             └── Update Session Context Store
-                                  │
-                                  ▼
-             [ Step 3: In-Memory Semantic Response Cache ]
-             ├── Token Signature Match? ──▶ Return Cached Response (0–1ms)
-             └── Cache Miss             ──▶ Proceed to Step 4
-                                  │
-                                  ▼
-             [ Step 4: Prompt Context Enrichment ]
-             └── Format: "[Field Context: Crop: Cotton | Acreage: 4.00 Acres]\nQuestion: ..."
-                                  │
-                                  ▼
-             [ Step 5: Cascading Provider Gateway ]
-             ├── Check Custom Farmer Key (Gemini / Groq / OpenRouter)
-             ├── Check Default Server Environment Keys
-             └── Fallback: FarmVet Built-in Agro-AI Engine (< 20ms)
-                                  │
-                                  ▼
-             [ Step 6: Regulatory Chemical Safety Interceptor ]
-             ├── Scan Banned Agrochemical Registry (Monocrotophos, Paraquat, etc.)
-             │    └── Found? ──▶ Overwrite with Certified Bio-Pesticide Alternative
-             ├── Audit Pre-Harvest Interval (PHI) Withholding Window
-             └── Append 15-Liter Knapsack Sprayer Dilution Math
-                                  │
-                                  ▼
-             [ Step 7: Cache Population & SSE Token Streaming ]
-             └── Store in Semantic Cache ──▶ Stream Smooth Token Chunks to UI
+### End-to-End Query & Safety Lifecycle
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Farmer as Farmer
+    participant UI as React UI (PWA)
+    participant GW as Gateway & Security
+    participant Intent as Intent Classifier
+    participant Session as Session Memory
+    participant Cache as Semantic Cache
+    participant LLM as LLM Engine
+    participant Safe as Safety Interceptor
+
+    Farmer->>UI: "I have 4 acres of cotton with whitefly. What should I spray?"
+    UI->>GW: POST /api/v1/ai/free-chat (with sessionId)
+    GW->>Intent: Verify Domain & Intent
+    Intent-->>GW: Passed (Agricultural Domain)
+    GW->>Session: Extract Entities (Crop: Cotton, Acreage: 4.0)
+    GW->>Cache: Lookup normalized key ("cotton:whitefly")
+    alt Cache Miss
+        GW->>LLM: Enriched Prompt [Field Context: Cotton | 4 Ac]
+        LLM-->>Safe: Raw Prescription generated
+        Safe->>Safe: Audit CIB and RC Banned Chemicals & PHI
+        Safe->>Safe: Compute 15L Knapsack Tank Dilution Math
+        Safe-->>Cache: Store verified advisory
+        Safe-->>UI: Deliver Clean Markdown Stream (Zero Asterisks)
+    else Cache Hit (0ms)
+        Cache-->>UI: Instant Cached Advisory (cacheHit: true)
+    end
+    UI-->>Farmer: Render Advisory & Field Memory Banner
 ```
 
 ### 3.1 Multi-Turn Field Profile State Machine
+
 Farmers in the field frequently phrase questions sequentially without restating context across turns:
 - *Turn 1*: `"I have 4 acres of cotton with whitefly."`
 - *Turn 2*: `"What is the recommended tank dosage?"`
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle: Session Initiated
+    Idle --> Greeting: "Namaste / Hii"
+    Greeting --> Idle: Warm Persona Welcome
+    Idle --> ProfileForming: "I have 4 acres of cotton"
+    ProfileForming --> ProfileActive: Crop=Cotton, Acreage=4.0
+    ProfileActive --> AdvisoryDelivered: "What spray should I use?"
+    AdvisoryDelivered --> ProfileActive: Context preserved for next turn
+    ProfileActive --> HazardBlocked: Farmer asks for banned chemical
+    HazardBlocked --> ProfileActive: Replaced with safe bio-alternative
+    ProfileActive --> Idle: Explicit Context Reset (/session/reset)
+```
 
 [`ConversationSessionService`](src/main/java/com/example/demo/modules/ai/service/ConversationSessionService.java) runs non-blocking regex extractors against incoming user input to capture:
 - **Crop Variety**: Wheat, Cotton, Paddy/Rice, Soybean, Potato, Tomato, Onion, Garlic, Maize.
@@ -162,6 +159,19 @@ Question: What is the recommended tank dosage?
 
 ### 3.2 Deterministic Agrochemical & PHI Interceptor
 [`ChemicalSafetyInterceptor`](src/main/java/com/example/demo/modules/ai/service/ChemicalSafetyInterceptor.java) enforces legal compliance with the **Central Insecticides Board & Registration Committee (CIB&RC)**:
+
+```mermaid
+flowchart LR
+    A["Farmer Prescription Request"] --> B{"Contains Banned Chemical?<br/>Monocrotophos, Paraquat, etc."}
+    B -- Yes --> C["🚨 BLOCK HAZARD<br/>Substitute Organic Bio-Alternative<br/>Neem Extract / Trichoderma"]
+    B -- No --> D{"Harvest in less than PHI Days?"}
+    D -- Yes --> E["⚠️ RAISE WITHHOLDING WARNING<br/>Switch to 0-3 Day PHI Remedy"]
+    D -- No --> F["✅ APPROVE PRESCRIPTION"]
+    C --> G["💧 Append 15L Knapsack Sprayer Math"]
+    E --> G
+    F --> G
+```
+
 - **Banned Chemical Block**: Queries or outputs mentioning prohibited substances (e.g. *Monocrotophos*, *Paraquat*, *Phorate*, *Endrin*, *Methyl Parathion*) are intercepted. The response is replaced with CIB&RC approved bio-alternatives (e.g. Cold-Pressed Neem Seed Kernel Extract @ 10,000 ppm, *Trichoderma viride*).
 - **PHI Withholding Safety**: Cross-references pesticide active ingredients with days remaining until harvest. If the chemical's Pre-Harvest Interval exceeds the harvest window, an APMC residue alert is raised.
 - **15L Knapsack Tank Math**: Translates dosage formulas into practical measurements for rural farmers:
@@ -339,6 +349,16 @@ docker compose logs -f backend
 ---
 
 ## 10. Benchmarks & Operational Metrics
+
+### Visual Latency & Inference Benchmark
+
+```mermaid
+xychart-beta
+    title "End-to-End Query Response Time Comparison (Milliseconds)"
+    x-axis ["Semantic Cache", "Built-in Agro-AI", "Groq LLaMA-3.3", "Gemini 1.5 Flash", "Standard Cloud LLM"]
+    y-axis "Latency (ms)" 0 --> 3500
+    bar [1, 18, 480, 1250, 3200]
+```
 
 | Metric | Measured Value | Benchmark Criteria |
 | :--- | :--- | :--- |
