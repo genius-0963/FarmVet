@@ -4,21 +4,21 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
-import Select from '../components/ui/Select';
 import Alert from '../components/ui/Alert';
 
 const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8082/api';
 
-const roleOptions = [
-  { value: 'USER', label: 'User' },
-  { value: 'FARMER', label: 'Farmer' },
-  { value: 'VET', label: 'Veterinarian' }
-];
-
 export default function Register() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ username: '', email: '', phone: '', password: '', role: 'USER' });
+  const [form, setForm] = useState({
+    username: '',
+    email: '',
+    phone: '',
+    password: '',
+    role: 'FARMER',
+    preferredLanguage: 'en',
+  });
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
   const [loading, setLoading] = useState(false);
@@ -29,15 +29,21 @@ export default function Register() {
     event.preventDefault();
     setMessage('');
     setLoading(true);
+
     try {
-      await axios.post(`${API_BASE}/auth/register`, form);
-      const userData = { username: form.username, email: form.email, role: form.role };
-      login(userData);
-      setMessage('Registration successful! Welcome to FarmVet.');
-      setMessageType('success');
-      navigate('/');
+      const response = await axios.post(`${API_BASE}/v1/auth/register`, form);
+      const resData = response.data;
+      if (resData.success && resData.data) {
+        login(resData.data.token, resData.data);
+        setMessage('Registration successful! Welcome to FarmVet Connect.');
+        setMessageType('success');
+        setTimeout(() => navigate('/'), 400);
+      } else {
+        throw new Error(resData.message || 'Registration failed');
+      }
     } catch (error) {
-      setMessage(error.response?.data || 'Registration failed. Please try again.');
+      const errorMessage = error.response?.data?.message || 'Registration failed. Please check inputs.';
+      setMessage(errorMessage);
       setMessageType('error');
     } finally {
       setLoading(false);
@@ -45,33 +51,22 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 px-4 py-8">
-      <div className="max-w-lg w-full">
-        {/* Logo/Icon */}
-        <div className="flex justify-center mb-8">
-          <div className="bg-secondary-600 rounded-full p-4 shadow-lg">
-            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-            </svg>
-          </div>
-        </div>
-
-        {/* Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h2>
-            <p className="text-gray-600">Join FarmVet Connect today</p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-green-100 px-4 py-8">
+      <div className="max-w-md w-full">
+        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+          <div className="text-center mb-6">
+            <h2 className="text-3xl font-extrabold text-gray-900 mb-1">Join FarmVet</h2>
+            <p className="text-sm text-gray-600">Create an agricultural producer or veterinary account</p>
           </div>
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               label="Username"
               name="username"
               value={form.username}
               onChange={handleChange}
               required
-              placeholder="Choose a username"
-              autoComplete="username"
+              placeholder="e.g. ramesh_patil"
             />
 
             <Input
@@ -81,47 +76,66 @@ export default function Register() {
               value={form.email}
               onChange={handleChange}
               required
-              placeholder="Enter your email"
-              autoComplete="email"
+              placeholder="you@domain.com"
             />
 
             <Input
-              label="Phone"
-              type="tel"
+              label="Phone Number"
               name="phone"
               value={form.phone}
               onChange={handleChange}
               required
-              placeholder="Enter your phone number"
-              autoComplete="tel"
+              placeholder="+91 9876543210"
             />
 
             <Input
-              label="Password"
+              label="Password (min 6 characters)"
               type="password"
               name="password"
               value={form.password}
               onChange={handleChange}
               required
-              placeholder="Create a password"
-              autoComplete="new-password"
+              placeholder="••••••••"
             />
 
-            <Select
-              label="Role"
-              name="role"
-              value={form.role}
-              onChange={handleChange}
-              options={roleOptions}
-              required
-            />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Account Role</label>
+                <select
+                  name="role"
+                  value={form.role}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-emerald-500 focus:border-emerald-500"
+                >
+                  <option value="FARMER">Farmer / Producer</option>
+                  <option value="EXPERT">Veterinarian / Agronomist</option>
+                  <option value="ADMIN">System Administrator</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Language</label>
+                <select
+                  name="preferredLanguage"
+                  value={form.preferredLanguage}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-emerald-500 focus:border-emerald-500"
+                >
+                  <option value="en">English</option>
+                  <option value="hi">हिंदी (Hindi)</option>
+                  <option value="mr">मराठी (Marathi)</option>
+                  <option value="ta">தமிழ் (Tamil)</option>
+                  <option value="te">తెలుగు (Telugu)</option>
+                </select>
+              </div>
+            </div>
 
             <Button
               type="submit"
               variant="primary"
               size="lg"
               loading={loading}
-              className="w-full mt-6"
+              className="w-full mt-6 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl shadow-md transition-all"
             >
               {loading ? 'Creating Account...' : 'Register'}
             </Button>
@@ -136,19 +150,12 @@ export default function Register() {
             />
           )}
 
-          <div className="mt-6 text-center">
-            <p className="text-gray-600">
-              Already have an account?{' '}
-              <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium">
-                Login here
-              </Link>
-            </p>
+          <div className="mt-6 text-center text-sm text-gray-600">
+            Already have an account?{' '}
+            <Link to="/login" className="text-emerald-600 font-semibold hover:underline">
+              Sign In
+            </Link>
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-8 text-center text-sm text-gray-500">
-          <p>FarmVet Connect - Agricultural Management System</p>
         </div>
       </div>
     </div>
