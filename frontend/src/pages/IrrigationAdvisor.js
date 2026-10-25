@@ -2,16 +2,28 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Button from '../components/ui/Button';
 import Alert from '../components/ui/Alert';
+import Modal from '../components/ui/Modal';
 
 const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8082/api';
 
 export default function IrrigationAdvisor() {
   const [plots, setPlots] = useState([]);
-  const [selectedPlot, setSelectedPlot] = useState('1');
+  const [selectedPlot, setSelectedPlot] = useState('');
   const [telemetry, setTelemetry] = useState({ moisture: 32.5, temp: 30.0 });
   const [recommendation, setRecommendation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState(null);
+
+  // Modal for creating plot
+  const [showAddPlotModal, setShowAddPlotModal] = useState(false);
+  const [creatingPlot, setCreatingPlot] = useState(false);
+  const [newPlot, setNewPlot] = useState({
+    plotName: '',
+    acres: '4.5',
+    currentCrop: 'Apple / Fruit Orchard',
+    irrigationType: 'DRIP',
+    soilType: 'Loamy'
+  });
 
   const fetchPlots = async () => {
     const token = localStorage.getItem('token');
@@ -22,6 +34,9 @@ export default function IrrigationAdvisor() {
       if (res.data?.data && res.data.data.length > 0) {
         setPlots(res.data.data);
         setSelectedPlot(String(res.data.data[0].id));
+      } else {
+        setPlots([]);
+        setSelectedPlot('');
       }
     } catch (e) {
       console.warn('Could not load plots', e);
@@ -32,7 +47,43 @@ export default function IrrigationAdvisor() {
     fetchPlots();
   }, []);
 
+  const handleCreatePlot = async (e) => {
+    e.preventDefault();
+    setCreatingPlot(true);
+    const token = localStorage.getItem('token');
+    try {
+      const res = await axios.post(
+        `${API_BASE}/v1/farm/plots`,
+        {
+          plotName: newPlot.plotName,
+          acres: parseFloat(newPlot.acres) || 1.0,
+          currentCrop: newPlot.currentCrop || 'Crop',
+          soilType: newPlot.soilType || 'Loamy',
+          irrigationType: newPlot.irrigationType || 'DRIP',
+          growthStage: 'VEGETATIVE'
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.data?.data) {
+        const created = res.data.data;
+        const updated = [...plots, created];
+        setPlots(updated);
+        setSelectedPlot(String(created.id));
+        setShowAddPlotModal(false);
+        setAlert({ type: 'success', message: `Farm plot "${created.plotName}" created successfully!` });
+      }
+    } catch (err) {
+      setAlert({ type: 'error', message: 'Failed to create plot: ' + (err.response?.data?.message || err.message) });
+    } finally {
+      setCreatingPlot(false);
+    }
+  };
+
   const handleSimulateTelemetry = async () => {
+    if (!selectedPlot) {
+      setAlert({ type: 'error', message: 'Please select or add a farm plot first.' });
+      return;
+    }
     const token = localStorage.getItem('token');
     try {
       await axios.post(
@@ -47,11 +98,16 @@ export default function IrrigationAdvisor() {
       );
       setAlert({ type: 'success', message: 'IoT Soil moisture telemetry ingested successfully!' });
     } catch (e) {
-      setAlert({ type: 'error', message: 'Failed to record sensor telemetry.' });
+      const msg = e.response?.data?.message || 'Failed to record sensor telemetry.';
+      setAlert({ type: 'error', message: msg });
     }
   };
 
   const handleCalculateIrrigation = async () => {
+    if (!selectedPlot) {
+      setAlert({ type: 'error', message: 'Please select or add a farm plot first.' });
+      return;
+    }
     setLoading(true);
     setAlert(null);
     const token = localStorage.getItem('token');
@@ -66,7 +122,8 @@ export default function IrrigationAdvisor() {
         setAlert({ type: 'success', message: 'Watering schedule calculated!' });
       }
     } catch (e) {
-      setAlert({ type: 'error', message: 'Could not calculate irrigation need. Ensure plot exists.' });
+      const msg = e.response?.data?.message || 'Could not calculate irrigation need. Ensure plot exists.';
+      setAlert({ type: 'error', message: msg });
     } finally {
       setLoading(false);
     }
@@ -90,6 +147,85 @@ export default function IrrigationAdvisor() {
         />
       )}
 
+      {showAddPlotModal && (
+        <Modal
+          isOpen={showAddPlotModal}
+          onClose={() => setShowAddPlotModal(false)}
+          title="Add New Farm Plot"
+        >
+          <form onSubmit={handleCreatePlot} className="p-6 space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Plot Name</label>
+              <input
+                type="text"
+                required
+                placeholder="e.g., North Orchard Plot A"
+                value={newPlot.plotName}
+                onChange={(e) => setNewPlot({ ...newPlot, plotName: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Acres</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  required
+                  placeholder="e.g., 4.5"
+                  value={newPlot.acres}
+                  onChange={(e) => setNewPlot({ ...newPlot, acres: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Crop</label>
+                <input
+                  type="text"
+                  placeholder="e.g., Apple / Wheat"
+                  value={newPlot.currentCrop}
+                  onChange={(e) => setNewPlot({ ...newPlot, currentCrop: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Irrigation Method</label>
+                <select
+                  value={newPlot.irrigationType}
+                  onChange={(e) => setNewPlot({ ...newPlot, irrigationType: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="DRIP">Drip Irrigation</option>
+                  <option value="SPRINKLER">Sprinkler</option>
+                  <option value="FLOOD">Surface / Flood</option>
+                  <option value="RAINFED">Rainfed</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Soil Type</label>
+                <input
+                  type="text"
+                  placeholder="e.g., Loamy"
+                  value={newPlot.soilType}
+                  onChange={(e) => setNewPlot({ ...newPlot, soilType: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button type="button" variant="secondary" onClick={() => setShowAddPlotModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" loading={creatingPlot}>
+                Save Plot
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Plot and Sensor Inputs */}
         <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 space-y-6">
@@ -99,11 +235,21 @@ export default function IrrigationAdvisor() {
           </h2>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Target Farm Plot</label>
+            <div className="flex justify-between items-center mb-1">
+              <label className="block text-sm font-semibold text-gray-700">Target Farm Plot</label>
+              <button
+                type="button"
+                onClick={() => setShowAddPlotModal(true)}
+                className="text-xs text-blue-600 hover:text-blue-800 font-semibold"
+              >
+                + Add Plot
+              </button>
+            </div>
             <select
               value={selectedPlot}
               onChange={(e) => setSelectedPlot(e.target.value)}
               className="w-full px-3 py-2 border rounded-xl focus:ring-blue-500 focus:border-blue-500 text-sm"
+              disabled={plots.length === 0}
             >
               {plots.length > 0 ? (
                 plots.map((p) => (
@@ -112,7 +258,7 @@ export default function IrrigationAdvisor() {
                   </option>
                 ))
               ) : (
-                <option value="1">North Orchard Plot A (4.5 acres)</option>
+                <option value="">No plots registered - Click &ldquo;+ Add Plot&rdquo;</option>
               )}
             </select>
           </div>
@@ -144,7 +290,12 @@ export default function IrrigationAdvisor() {
             <button
               type="button"
               onClick={handleSimulateTelemetry}
-              className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg"
+              disabled={!selectedPlot}
+              className={`w-full py-2 text-xs font-semibold rounded-lg ${
+                !selectedPlot
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+              }`}
             >
               Push Sensor Reading
             </button>
@@ -155,8 +306,13 @@ export default function IrrigationAdvisor() {
             variant="primary"
             size="lg"
             loading={loading}
+            disabled={!selectedPlot}
             onClick={handleCalculateIrrigation}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-md"
+            className={`w-full font-semibold py-3 rounded-xl shadow-md ${
+              !selectedPlot
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700 text-white'
+            }`}
           >
             {loading ? 'Evaluating ET0...' : 'Calculate Irrigation Need'}
           </Button>
