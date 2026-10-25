@@ -60,6 +60,8 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       APP_STORAGE_UPLOAD_DIR: /app/uploads
+      APP_JWT_SECRET: ${APP_JWT_SECRET:-SuperSecretFarmVetKey2026WithAtLeast256BitsLengthForHmacSha256Security!}
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,https://farmvetconnect.vercel.app}
     ports:
       - "8082:8082"
     depends_on:
@@ -71,6 +73,20 @@ services:
       - app_uploads:/app/uploads
     networks:
       - farmvet-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: farmvet-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - farmvet-network
+    restart: unless-stopped
 
 networks:
   farmvet-network:
