@@ -1,5 +1,6 @@
 package com.example.demo.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -19,6 +20,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -28,6 +30,9 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Value("${app.cors.allowed-origins:}")
+    private String configuredOrigins;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
@@ -71,14 +76,35 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:5173",
-                "http://localhost:3000",
-                "http://farmvetconnect.vercel.app"
+
+        List<String> originPatterns = new ArrayList<>(Arrays.asList(
+                "http://localhost:[*]",
+                "https://localhost:[*]",
+                "http://127.0.0.1:[*]",
+                "https://*.vercel.app",
+                "https://farmvetconnect.vercel.app",
+                "http://farmvetconnect.vercel.app",
+                "https://*.pinggy.net",
+                "https://*.ngrok-free.app",
+                "https://*.ngrok.io",
+                "https://*.trycloudflare.com"
         ));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
+
+        if (configuredOrigins != null && !configuredOrigins.trim().isEmpty()) {
+            for (String origin : configuredOrigins.split(",")) {
+                String trimmed = origin.trim();
+                if (!trimmed.isEmpty() && !originPatterns.contains(trimmed)) {
+                    originPatterns.add(trimmed);
+                }
+            }
+        }
+
+        configuration.setAllowedOriginPatterns(originPatterns);
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
+        configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
