@@ -20,12 +20,19 @@ public class LocalFileStorageService implements FileStorageService {
     private final Path baseStoragePath;
 
     public LocalFileStorageService(@Value("${app.storage.upload-dir:./uploads}") String uploadDir) {
-        this.baseStoragePath = Paths.get(uploadDir).toAbsolutePath().normalize();
+        Path targetPath;
         try {
-            Files.createDirectories(this.baseStoragePath);
-        } catch (IOException e) {
-            throw new RuntimeException("Could not create the base storage directory for file uploads.", e);
+            targetPath = Paths.get(uploadDir).toAbsolutePath().normalize();
+            Files.createDirectories(targetPath);
+        } catch (Exception e) {
+            targetPath = Paths.get(System.getProperty("java.io.tmpdir"), "uploads").toAbsolutePath().normalize();
+            try {
+                Files.createDirectories(targetPath);
+            } catch (IOException ex) {
+                throw new RuntimeException("Could not create the base storage directory for file uploads.", ex);
+            }
         }
+        this.baseStoragePath = targetPath;
     }
 
     @Override

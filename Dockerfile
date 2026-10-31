@@ -7,10 +7,12 @@ RUN mvn clean package -DskipTests
 
 FROM eclipse-temurin:17-jre
 WORKDIR /app
-RUN groupadd -r appgroup && useradd -r -g appgroup appuser
-USER appuser
+RUN groupadd -r appgroup && useradd -r -g appgroup appuser && \
+    mkdir -p /app/uploads && \
+    chown -R appuser:appgroup /app
 
-COPY --from=builder /workspace/target/*.jar app.jar
+COPY --from=builder --chown=appuser:appgroup /workspace/target/*.jar app.jar
+USER appuser
 EXPOSE 8082
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
